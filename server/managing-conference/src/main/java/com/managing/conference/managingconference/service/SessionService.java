@@ -8,15 +8,16 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class SessionService {
     @Autowired
     private SessionRepository sessionRepository;
-    public Calendar calendar = Calendar.getInstance();
-    public Calendar calendarForNewSessionStartTime = Calendar.getInstance();
-    public Calendar calendarForNewSessionEndTime = Calendar.getInstance();
+    public Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC+3"));
+    public Calendar calendarForNewSessionStartTime = Calendar.getInstance(TimeZone.getTimeZone("UTC+3"));
+    public Calendar calendarForNewSessionEndTime = Calendar.getInstance(TimeZone.getTimeZone("UTC+3"));
 
     public SessionRepository getSessionRepository(){
         return sessionRepository;
@@ -57,7 +58,7 @@ public class SessionService {
 
         if((calendarForNewSessionEndTime.get(Calendar.HOUR_OF_DAY) > 17) ||
                 (calendarForNewSessionEndTime.get(Calendar.HOUR_OF_DAY) == 17 &&
-                        calendarForNewSessionEndTime.get(Calendar.MINUTE) >= 0)){
+                        calendarForNewSessionEndTime.get(Calendar.MINUTE) >= 0)){       //End of Day
             date = createStartSession(9, 0);
 
             date = addSessionTime(date, Calendar.DATE, 1);
@@ -65,20 +66,21 @@ public class SessionService {
 
             date = addSessionTime(date, Calendar.MINUTE, newSession.getDuration());
             newSession.setEndTime(date);
-            newSession.setTrack(newSession.getTrack()+1);
+            newSession.setTrack(lastSession.getTrack()+1);
 
             netWorkingEventSession = createNetworkEventSession(lastSession);
             sessionRepository.save(netWorkingEventSession);
         }else if((calendarForNewSessionEndTime.get(Calendar.HOUR_OF_DAY) >= 12 &&
-                calendarForNewSessionStartTime.get(Calendar.HOUR_OF_DAY) < 12)){
-            date = createStartSession(12, 0);
+                calendarForNewSessionStartTime.get(Calendar.HOUR_OF_DAY) < 12)){        //Lunch Time
+            date = createStartSession(13, 0);
             newSession.setStartTime(date);
             date = addSessionTime(date, Calendar.MINUTE, newSession.getDuration());
             newSession.setEndTime(date);
+            newSession.setTrack(lastSession.getTrack());
 
             lunchSession = createLunchSession(lastSession);
             sessionRepository.save(lunchSession);
-        }else {
+        }else {                                                                         //Rest of the Day
             newSession.setTrack(lastSession.getTrack());
         }
     }
@@ -104,7 +106,7 @@ public class SessionService {
     public Session createNetworkEventSession(Session lastSession){
         Date end = createStartSession(17, 0);
         Date start = createStartSession(16, 0);
-        if(findDifferenceInMinutes(lastSession.getEndTime(), start) < 0){
+        if(findDifferenceInMinutes(lastSession.getEndTime(), start) > 0){
             start = lastSession.getEndTime();
         }
         int duration = findDifferenceInMinutes(end, start);
