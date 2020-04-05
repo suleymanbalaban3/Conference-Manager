@@ -46,7 +46,7 @@ class SessionAdd extends Component {
 
   render() {
     const {item} = this.state;
-    const title = <h2>{'Add Group'}</h2>;
+    const title = <h2>{'Add Session'}</h2>;
 
     return <div>
       <AppNavBar/>
